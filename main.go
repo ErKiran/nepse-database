@@ -25,22 +25,15 @@ type Candle struct {
 func main() {
 	start := time.Now()
 	fmt.Println("start", start)
-	// Code to measure
-	index := 0
-	channel := make(chan Candle, 100)
+	channel := make(chan Candle, 1000)
 	err := filepath.Walk("nepse-data/data/company-wise", func(path string, info fs.FileInfo, err error) error {
-
-		// for rec := range Work(path) {
-		// 	fmt.Println(rec, "rec")
-		// }
-		// Work(path)
 		go SimpleWorker(path, channel)
-		index++
+		// WorkN(path)
 		return nil
 	})
 
-	for i := 0; i < index-1; i++ {
-		fmt.Println(<-channel)
+	for elem := range channel {
+		fmt.Println(elem)
 	}
 
 	if err != nil {
@@ -58,10 +51,11 @@ func SimpleWorker(path string, channel chan Candle) {
 			if err != nil {
 				log.Fatal("Unable to read input file "+path, err)
 			}
-			defer close(channel)
-			csvReader := csv.NewReader(f)
 
 			defer f.Close()
+
+			csvReader := csv.NewReader(f)
+
 			if _, err := csvReader.Read(); err != nil { //read header
 				log.Fatal(err)
 			}
@@ -82,59 +76,14 @@ func SimpleWorker(path string, channel chan Candle) {
 					Volume: rec[6],
 					Date:   rec[0],
 				}
-				fmt.Println("candle", candle)
 				channel <- candle
 			}
+			defer close(channel)
 		}
 	}()
+
 	return
 }
-
-// func Work(path string) (ch chan Candle) {
-// 	isCsv, ticker := IsCsv(path)
-// 	fmt.Println("ticker", ticker)
-// 	ch = make(chan Candle, 10)
-// 	// var priceHistory []Candle
-// 	go func() {
-// 		if isCsv {
-// 			f, err := os.Open(path)
-// 			if err != nil {
-// 				log.Fatal("Unable to read input file "+path, err)
-// 			}
-
-// 			defer close(ch)
-// 			csvReader := csv.NewReader(f)
-
-// 			defer f.Close()
-
-// 			// record, err := csvReader.Read()
-// 			if _, err := csvReader.Read(); err != nil { //read header
-// 				log.Fatal(err)
-// 			}
-// 			for {
-// 				rec, err := csvReader.Read()
-// 				if err != nil {
-// 					if err == io.EOF {
-// 						break
-// 					}
-// 					log.Fatal(err)
-// 				}
-// 				candle := Candle{
-// 					Ticker: ticker,
-// 					Low:    rec[3],
-// 					High:   rec[2],
-// 					Open:   rec[1],
-// 					Close:  rec[4],
-// 					Volume: rec[6],
-// 					Date:   rec[0],
-// 				}
-// 				fmt.Println("candle", candle)
-// 				ch <- candle
-// 			}
-// 		}
-// 	}()
-// 	return
-// }
 
 func WorkN(path string) {
 	isCsv, ticker := IsCsv(path)
