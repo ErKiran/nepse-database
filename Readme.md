@@ -6,3 +6,5 @@ close character varying(70) NOT NULL DEFAULT '',
 low character varying(70) NOT NULL DEFAULT '',
 volume character varying(70) NOT NULL DEFAULT '',
 open character varying(70) NOT NULL DEFAULT '');
+
+> DELETE FROM nepse;

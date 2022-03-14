@@ -4,7 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strings"
+
+	pq "github.com/lib/pq"
 )
 
 type Nepse struct {
@@ -17,16 +18,30 @@ type Nepse struct {
 	Volume string `db:"volume"`
 }
 
+type Candles struct {
+	Date   []string
+	Ticker []string
+	Open   []string
+	Close  []string
+	High   []string
+	Low    []string
+	Volume []string
+}
+
 type NepseData []Nepse
 
-func (nd NepseData) BulkInsert(db *sql.DB, placeholders []string, vals []interface{}) error {
+func (nd NepseData) BulkInsert(db *sql.DB, vals Candles) error {
 	txn, err := db.Begin()
 	if err != nil {
 		return errors.New("could not start a new transaction")
 	}
 
-	insertStatement := fmt.Sprintf("INSERT INTO nepse(date,ticker,high,low,open,close,volume) VALUES %s", strings.Join(placeholders, ","))
-	_, err = txn.Exec(insertStatement, vals...)
+	query := `
+	INSERT INTO nepse (date, ticker, open, close, high, low, volume)
+	  (
+		select * from unnest($1::text[], $2::text[], $3::text[], $4::text[], $5::text[], $6::text[], $7::text[])
+	  )`
+	_, err = txn.Exec(query, pq.Array(vals.Date), pq.Array(vals.Ticker), pq.Array(vals.Open), pq.Array(vals.Close), pq.Array(vals.High), pq.Array(vals.Low), pq.Array(vals.Volume))
 	if err != nil {
 		txn.Rollback()
 		fmt.Println("err", err)
