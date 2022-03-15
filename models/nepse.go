@@ -21,11 +21,11 @@ type Nepse struct {
 type Candles struct {
 	Date   []string
 	Ticker []string
-	Open   []string
-	Close  []string
-	High   []string
-	Low    []string
-	Volume []string
+	Open   []float64
+	Close  []float64
+	High   []float64
+	Low    []float64
+	Volume []float64
 }
 
 type NepseData []Nepse
@@ -39,7 +39,7 @@ func (nd NepseData) BulkInsert(db *sql.DB, vals Candles) error {
 	query := `
 	INSERT INTO nepse (date, ticker, open, close, high, low, volume)
 	  (
-		select * from unnest($1::text[], $2::text[], $3::text[], $4::text[], $5::text[], $6::text[], $7::text[])
+		select * from unnest($1::text[], $2::text[], $3::float[], $4::float[], $5::float[], $6::float[], $7::float[])
 	  )`
 	_, err = txn.Exec(query, pq.Array(vals.Date), pq.Array(vals.Ticker), pq.Array(vals.Open), pq.Array(vals.Close), pq.Array(vals.High), pq.Array(vals.Low), pq.Array(vals.Volume))
 	if err != nil {

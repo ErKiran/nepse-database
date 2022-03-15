@@ -14,7 +14,7 @@ https://klotzandrew.com/blog/postgres-passing-65535-parameter-limit
 BENCHMARKS 
 Inserted 165534 rows in 948.937125ms (Also Includes file processing time)
 Without file processig time 
-Inserted 165534 rows in 3.747084ms 😱
+Inserted 165534 rows in 853.073333ms 
 
 > CREATE TABLE IF NOT EXISTS nepse(
 date character varying(70) NOT NULL DEFAULT '',

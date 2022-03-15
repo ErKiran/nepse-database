@@ -10,6 +10,7 @@ import (
 	"nepse-database/models"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -21,11 +22,11 @@ import (
 type Candle struct {
 	Date   string
 	Ticker string
-	Open   string
-	Close  string
-	High   string
-	Low    string
-	Volume string
+	Open   float64
+	Close  float64
+	High   float64
+	Low    float64
+	Volume float64
 }
 
 func setupDB() *sql.DB {
@@ -38,11 +39,11 @@ func setupDB() *sql.DB {
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS nepse(
 		date character varying(70) NOT NULL DEFAULT '',
 		ticker character varying(70) NOT NULL DEFAULT '',
-		high character varying(70) NOT NULL DEFAULT '',
-		close character varying(70) NOT NULL DEFAULT '',
-		low character varying(70) NOT NULL DEFAULT '',
-		volume character varying(70) NOT NULL DEFAULT '',
-		open character varying(70) NOT NULL DEFAULT '');`)
+		high float(8) NOT NULL,
+		close float(8) NOT NULL,
+		low float(8) NOT NULL,
+		volume float(8) NOT NULL,
+		open float(8) NOT NULL);`)
 
 	if err != nil {
 		log.Fatal(err, "Unable to create nepse data")
@@ -55,8 +56,6 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-	start := time.Now()
-	defer func() { fmt.Println("duration", time.Since(start)) }()
 	var candleData models.Candles
 	err = filepath.Walk("nepse-data/data/company-wise", func(path string, info fs.FileInfo, err error) error {
 		candles := WorkN(path)
@@ -80,6 +79,8 @@ func main() {
 
 	db := setupDB()
 
+	start := time.Now()
+	defer func() { fmt.Println("duration", time.Since(start)) }()
 	err = nepse.BulkInsert(db, candleData)
 
 	if err != nil {
@@ -116,11 +117,11 @@ func WorkN(path string) []Candle {
 			}
 			candle := Candle{
 				Ticker: ticker,
-				Low:    rec[3],
-				High:   rec[2],
-				Open:   rec[1],
-				Close:  rec[4],
-				Volume: rec[6],
+				Low:    ParseFloat(rec[3]),
+				High:   ParseFloat(rec[2]),
+				Open:   ParseFloat(rec[1]),
+				Close:  ParseFloat(rec[4]),
+				Volume: ParseFloat(rec[6]),
 				Date:   rec[0],
 			}
 			priceHistory = append(priceHistory, candle)
@@ -139,4 +140,12 @@ func IsCsv(path string) (bool, string) {
 		return true, strings.Split(lastItem, ".")[0]
 	}
 	return false, ""
+}
+
+func ParseFloat(value string) float64 {
+	float, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return float
 }
